@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import requests
+from time import sleep
 
 from archytas.tool_utils import AgentRef, LoopControllerRef, tool
 
@@ -11,7 +12,7 @@ from beaker_kernel.lib.context import BaseContext
 
 logger = logging.getLogger(__name__)
 
-BIOME_URL = "http://biome_api.biome-beaker:8082"
+BIOME_URL = "http://biome_api:8082"
 
 
 class BiomeAgent(BaseAgent):
@@ -80,30 +81,40 @@ class BiomeAgent(BaseAgent):
     # CHOOSING OPTION 2 FOR THE TIME BEING
 
     @tool()
-    async def query_page(self, query: str, base_url: str) -> str:
+    async def query_page(self, task: str, base_url: str) -> str:
         """
-        Run a query over a *specific* source in the Biome app and return the results.
+        Run an action over a *specific* source in the Biome app and return the results.
         Find the url from a data source by using `search` tool first and
         picking the most relevant one.
 
+        This can be used to ask questions about a data source or download some kind
+        of artifact from it. This tool just kicks off a job where an AI crawls the website
+        and performs the task.
+
         Args:
-            query (str): Query to run over the source.
+            task (str): Task given in natural language to perform over URL.
             base_url (str): URL to run query over.
         Returns:
             str: The answer to the query running over the given url
         """
-        response = requests.post( f"{BIOME_URL}/tasks/query", json={"user_task": query, "url": base_url})
+        # Kick off query
+        response = requests.post( f"{BIOME_URL}/tasks/query", json={"user_task": task, "url": base_url})
         job_id = response.json()["job_id"]
+
+        # Poll result
         status = "queued"
         result = None
         while status == "queued" or status == "started":
             response = requests.get(f"{BIOME_URL}/tasks/{job_id}").json()
             status = response["status"]
-            result = response["result"]["job_result"]
+            sleep(1)
+
+        # Handle result
         if status != "finished":
             return f"Query failed to complete. Job {status}"
-        return result["answer"]
+        result = response["result"]["job_result"]
 
+        return result["answer"]
 
 
     # @tool(autosummarize=True)
@@ -122,21 +133,3 @@ class BiomeAgent(BaseAgent):
     #     result = requests.post(url, json={"uris": [base_url]})
     #     return result.json()
 
-    # @tool(autosummarize=True)
-    # async def query(self, query: str, source_id: str, agent:AgentRef, loop: LoopControllerRef) -> str:
-    #     """
-    #     Run a query over a source in the Biome app and return the results.
-    #     Note that this starts the query job but does not wait for it to finish.
-
-
-    #     Args:
-    #         query (str): Query to run over the source.
-    #         source_id (str): Source to run query over.
-    #     Returns:
-    #         dict: The information about the query job
-    #     """
-
-    #     url = f"{BIOME_URL}/tasks/query"
-    #     base_url = "TODO(IMPLEMENT): Use the source_id to get the base url"
-    #     result = requests.post(url, json={"user_task": query, "url": base_url})
-    #     return result.json()

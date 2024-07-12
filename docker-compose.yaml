@@ -3,8 +3,7 @@
 version: '3'
 
 networks:
-  biome-beaker:
-    external: true 
+  beaker:
 
 services:
   jupyter:
@@ -27,7 +26,7 @@ services:
       - .:/jupyter
     command: ["beaker", "dev", "watch", "--ip", "0.0.0.0"]
     networks:
-      - biome-beaker
+      - beaker
   ui:
     image: node:20
     volumes:
@@ -38,4 +37,4 @@ services:
       - "8080:8080"
     command: ["npm", "run", "serve"]
     networks:
-      - biome-beaker
+      - beaker

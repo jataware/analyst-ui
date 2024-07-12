@@ -16,9 +16,9 @@
                     </div>
                 </div>
                 <div v-else>
-                    <div>
+                    <p style="line-height: normal">
                         {{ cell.source }} <span v-if="savedEdit" style="font-weight: 100;">(edited)</span>
-                    </div>
+                    </p>
                 </div>
             </div>
             <div class="actions">
