@@ -2,7 +2,7 @@
     <div class="llm-query-cell">
         <div class="query-row">
             <div class="query">
-                <div v-if="editing" style="display: flex">
+                <div v-if="editing" style="display: flex; justify-content: end">
                     <!-- TODO move ctrl/shift event stop on keyboard controller -->
                     <ContainedTextArea
                         style="max-width: 50%; margin-right: 0.75rem; flex: 1;"
@@ -24,6 +24,7 @@
             <div class="actions">
                 <Button
                     text
+                    v-show="!editing"
                     size="small"
                     icon="pi pi-pencil"
                     severity="info"
@@ -48,26 +49,39 @@
             </div>
         </div>
         <div class="events" :class="event.type" v-for="event of cell.events" :key="event">
-            <span v-if="event.type === 'thought'">Thought:&nbsp;</span>
-            <template v-if="event.type === 'thought'" >{{ event.content }}</template>
-            <span v-if="event.type ==='code_cell'">
-                <Component
-                    v-if="typeof(getChildByCellId(event.content?.id)) !== 'undefined'"
-                    
-                    :key="event.content.id"
-                    :is="BeakerCodeCell"
-                    :cell="getChildByCellId(event.content.id)"
-                    :index="`${index}:${event.content.index}`"
-                    :class="{
-                        selected: (index === selectedCellIndex)
-                    }"
-                    ref="childrenRef"
-                    drag-enabled=false
-                    @click.stop="props.childOnClickCallback(`${index}:${event.content.index}`)"
-                />
-            </span>
-            <template v-if="event.type === 'response'" >{{ event.content }}</template>
-            <template v-if="event.type === 'abort'" >{{ event.content }}</template>
+            <template v-if="event.type ==='code_cell' && typeof(getChildByCellId(event.content?.id)) !== 'undefined'">
+                <div>
+                <!-- TODO: DO NOT USE MIN-WIDTH TO LINE UP-->
+                <button
+                        outlined
+                        icon="pi pi-code"
+                        size="small"
+                        style="min-width: 94.5%;"
+                        @click="toggleVisible"
+                    />
+                    <span v-if="isVisible">
+                        <Component
+                            :key="event.content.id"
+                            :is="BeakerCodeCell"
+                            :cell="getChildByCellId(event.content.id)"
+                            :index="`${index}:${event.content.index}`"
+                            :class="{
+                                selected: (index === selectedCellIndex)
+                            }"
+                            ref="childrenRef"
+                            drag-enabled=false
+                            @click.stop="props.childOnClickCallback(`${index}:${event.content.index}`)"
+                        />
+                    </span>
+                    <CodeCellOutput :outputs="getChildByCellId(event.content.id).outputs" :busy="isBusy" :isVisible="isVisible" v-else/>
+                </div>
+            </template>
+            <!-- <template v-else-if="event.type === 'thought'"><span>Thought:&nbsp;</span> {{ event.content }}</template> -->
+            <template v-else-if="event.type === 'user_question'" >{{ event.content }}</template>
+            <template v-else-if="event.type === 'user_answer'" >{{ event.content }}</template>
+            <template v-else-if="event.type === 'response'" >{{ event.content }}</template>
+            <template v-else-if="event.type === 'abort'" >{{ event.content }}</template>
+            <template v-else-if="event.type !== 'thought'">{{ event.content }}</template>
         </div>
         <div
             class="input-request"
@@ -103,13 +117,14 @@ import ContainedTextArea from './ContainedTextArea.vue';
 import { IIOPubMessage } from "@jupyterlab/services/lib/kernel/messages";
 import { BeakerBaseCell, BeakerSession } from 'beaker-kernel';
 import BeakerCodeCell from './BeakerCodecell.vue';
+import CodeCellOutput from './BeakerCodecellOutput.vue';
 
 const props = defineProps([
     'index',
     'cell',
     'selectedCellIndex',
     'childOnClickCallback',
-    'selectNext'
+    'selectNext',
 ]);
 
 const cell = ref(props.cell);
@@ -119,6 +134,8 @@ const savedEdit = ref("");
 const response = ref("");
 const session: BeakerSession = inject("session");
 const childrenRef = ref<typeof BeakerCodeCell|null>(null);
+const isVisible = ref(false);
+const toggleVisible = () => isVisible.value = !isVisible.value;
 
 const getChildByCellId = (child_id: string) : BeakerBaseCell | undefined => {
     const index = cell.value.children?.findIndex((child) => child.id === child_id)
@@ -165,7 +182,7 @@ defineExpose({execute});
 
 <style lang="scss">
 .llm-query-cell {
-    padding: 0.5rem 0.35rem 1rem 1.2rem;
+    padding: 0.5rem 27% 0.35rem //1rem 1.2rem;
 }
 
 .query-row {
@@ -179,6 +196,8 @@ defineExpose({execute});
 }
 
 .query {
+    align-items: right;
+    text-align: right;
     font-weight: bold;
     flex: 1;
     line-height: 2.5rem;

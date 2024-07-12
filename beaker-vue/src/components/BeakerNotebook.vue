@@ -1,87 +1,12 @@
 <template>
     <div class="beaker-notebook">
-        <header>
-            <Toolbar class="toolbar">
-                <template #start>
-                    <div class="status-bar">
-                        <i class="pi pi-circle-fill" :style="`font-size: inherit; color: var(--${connectionColor});`" />
-                        {{capitalize(props.connectionStatus)}}
-                    </div>
-                    <Button
-                        outlined
-                        size="small"
-                        icon="pi pi-angle-down"
-                        iconPos="right"
-                        class="connection-button"
-                        @click="toggleContextSelection"
-                        :label="selectedKernel"
-                        :loading="!activeContext?.slug"
-                    />
-                </template>
-
-                <template #center>
-                    <div class="logo">
-                        <h4>
-                            Beaker <span class="longer-title">Development Interface</span>
-                        </h4>
-                    </div>
-                </template>
-
-                <template #end>
-                    <nav>
-                        <Button
-                            text
-                            @click="toggleDarkMode"
-                            style="margin: 0; color: var(--gray-500);"
-                            :icon="themeIcon"
-                        />
-                        <a
-                            href="https://jataware.github.io/beaker-kernel"
-                            rel="noopener"
-                            target="_blank"
-                        >
-                            <Button
-                                text
-                                style="margin: 0; color: var(--gray-500);"
-                                aria-label="Beaker Documentation"
-                                icon="pi pi-book"
-                            />
-                        </a>
-                        <a
-                            href="https://github.com/jataware/beaker-kernel"
-                            rel="noopener"
-                            target="_blank"
-                        >
-                            <Button
-                                text
-                                style="margin: 0; color: var(--gray-500);"
-                                aria-label="Github Repository Link Icon"
-                                icon="pi pi-github"
-                            />
-                        </a>
-                    </nav>
-                </template>
-            </Toolbar>
-
-        </header>
-
-        <main style="display: flex;">
-
-            <SideMenu
-                position="left"
-                :show-label="true"
-                highlight="line"
-            >
-                <SideMenuPanel  label="Context" icon="pi pi-home">
-                    <ContextTree :context="activeContext?.info" @action-selected="selectAction"/>
-                </SideMenuPanel>
-            </SideMenu>
+        <main style="display: flex; justify-content: center;">
             <div
                 class="ide-cells"
-                style="flex: 100;"
+                style="flex: 100; justify-content: center;"
                 @keydown="handleKeyboardShortcut"
             >
-                    <NotebookControls
+                <NotebookControls
                         @run-cell="runCell()"
                         @remove-cell="removeCell"
                         @add-code-cell="addCodeCell"
@@ -121,71 +46,18 @@
                             @dragover="handleDragOver($event, cell, index)"
                             @dragend="handleDragEnd"
                         />
-                        <div
-                            class="drop-overflow-catcher"
-                            @dragover="dragOverIndex = session.notebook.cells.length-1; $event.preventDefault();"
-                            @drop="handleDrop($event, session.notebook.cells.length-1)"
-                        >
-                            <transition name="fade">
-                                <div class="welcome-placeholder" v-if="cellCount < 3">
-                                    <SvgPlaceholder />
-                                </div>
-                            </transition>
-                        </div>
                     </div>
+
                 </div>
-
-                <BeakerAgentQuery
-                    class="agent-query-container"
-                    @select-cell="selectCell"
-                    @run-cell="runCell"
-                    :run-cell-callback="scrollBottomCellContainer"
-                />
+                    <BeakerAgentQuery
+                        class="agent-query-container"
+                        @select-cell="selectCell"
+                        @run-cell="runCell"
+                        :run-cell-callback="scrollBottomCellContainer"
+                    />
             </div>
-            <SideMenu
-                position="right"
-                ref="rightMenu"
-                highlight="line"
-                :show-label="true"
-            >
-                <SideMenuPanel tabId="preview" label="Preview" icon="pi pi-eye">
-                    <PreviewPane :previewData="previewData"/>
-                </SideMenuPanel>
-
-                <SideMenuPanel tabId="action" label="Actions" icon="pi pi-send">
-                    <Card class="debug-card">
-                        <template #title>Execute an Action</template>
-                        <template #content>
-                            <BeakerExecuteAction
-                                ref="executeActionRef"
-                                :selectedAction="selectedAction"
-                                :actions="activeContext?.info?.actions"
-                                :rawMessages="props.rawMessages"
-                                @clear-selection="selectedAction = undefined"
-                            />
-                        </template>
-                    </Card>
-                </SideMenuPanel>
-
-                <SideMenuPanel tabId="logging" label="Logging" icon="pi pi-list" >
-                    <LoggingPane :entries="props.debugLogs" />
-                </SideMenuPanel>
-
-                <SideMenuPanel label="Messages" icon="pi pi-comments">
-                    <LoggingPane :entries="props.rawMessages" />
-                </SideMenuPanel>
-
-                <SideMenuPanel label="Files" icon="pi pi-file-export">
-                    <BeakerFilePane />
-                </SideMenuPanel>
-
-            </SideMenu>
         </main>
 
-        <!-- TODO may use HTML comments to hide footer -->
-        <footer>
-            <FooterDrawer />
-         </footer>
     </div>
 
     <BeakerContextSelection
@@ -213,7 +85,6 @@ import BeakerContextSelection from "./BeakerContextSelection.vue";
 import BeakerExecuteAction from "./BeakerExecuteAction.vue";
 import FooterDrawer from './FooterDrawer.vue';
 import LoggingPane from './LoggingPane.vue';
-import BeakerFilePane from "./BeakerFilePane.vue";
 import ContextTree from "./ContextTree.vue";
 import PreviewPane from "./PreviewPane.vue";
 import SvgPlaceholder from './SvgPlaceholder.vue';
@@ -267,7 +138,7 @@ const selectedKernel = ref();
 const contextSelectionOpen = ref(false);
 const showDebugPane = ref (true);
 const cellsContainerRef = ref(null);
-const activeContextPayload = ref<any>(null);
+const activeContextPayload = ref<any>({"context": "biome"});
 const contextProcessing = ref(false);
 const rightPaneTabIndex = ref(0);
 const isDeleteprefixActive = ref(false);
@@ -325,7 +196,7 @@ function handleNavAction(action) {
         focusSelectedCell();
     } else if (action === 'select-next-cell') {
         if (selectedCellIndex.value === String(cellCount.value - 1)) {
-            addCodeCell();
+           return;
         } else {
             selectNextCell();
         }
@@ -607,10 +478,6 @@ const removeCell = () => {
         session.notebook.removeCell(parent);
     }
 
-    // Always keep at least one cell. If we remove the last cell, replace it with a new empty codecell.
-    if (cellCount.value === 0) {
-        session.addCodeCell("");
-    }
     // Fixup the selection if we remove the last item.
     if (parent >= cellCount.value) {
         selectedCellIndex.value = mergeCellIndex(cellCount.value - 1, 0);
@@ -619,10 +486,8 @@ const removeCell = () => {
 
 const resetNB = async () => {
     await session.reset();
+    activeContextPayload.value = {"context": "biome"};
     reapplyContext();
-    if (cellCount.value === 0) {
-        session.addCodeCell("");
-    }
 };
 
 function toggleContextSelection() {
@@ -761,14 +626,16 @@ function handleDragEnd() {
 
 
 onBeforeMount(() => {
-    if (cellCount.value <= 0) {
-        session.addCodeCell("");
-    }
+    // if (cellCount.value <= 0) {
+    //     session.addCodeCell("");
+    // }
     setTheme();
 });
 
 onMounted(() => {
-    updateContextInfo();
+    updateContextInfo()
+    .then(() => setContext({"context": "biome"}));
+
 });
 
 defineExpose({

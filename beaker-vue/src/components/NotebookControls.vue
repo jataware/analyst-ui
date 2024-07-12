@@ -1,70 +1,46 @@
 <template>
   <div class="notebook-controls">
-      <InputGroup>
-          <SplitButton
-              @click="emit('add-code-cell')"
-              v-tooltip.bottom="{value: 'Add New Cell', showDelay: 300}"
-              icon="pi pi-plus pi-code"
-              size="small"
-              severity="info"
-              :model="menuModel"
-              text
-          />
-          <Button
-              @click="emit('remove-cell')"
-              v-tooltip.bottom="{value: 'Remove Selected Cell', showDelay: 300}"
-              icon="pi pi-minus"
-              size="small"
-              severity="info"
-              text
-          />
-          <Button
-              @click="emit('run-cell')"
-              v-tooltip.bottom="{value: 'Run Selected Cell', showDelay: 300}"
-              icon="pi pi-play"
-              size="small"
-              severity="info"
-              text
-          />
-          <!-- TODO implement Stop-->
-          <Button
-              @click="identity"
-              v-tooltip.bottom="{value: 'Stop Execution', showDelay: 300}"
-              icon="pi pi-stop"
-              size="small"
-              severity="info"
-              text
-          />
-      </InputGroup>
-      <InputGroup style="margin-right: 1rem;">
-          <Button
-              @click="emit('reset-nb')"
-              v-tooltip.bottom="{value: 'Reset notebook', showDelay: 300}"
-              icon="pi pi-refresh"
-              size="small"
-              severity="info"
-              text
-          />
-          <Button
-              @click="downloadNotebook"
-              v-tooltip.bottom="{value: 'Download as .ipynb', showDelay: 300}"
-              icon="pi pi-download"
-              size="small"
-              severity="info"
-              text
-          />
-          <OpenNotebookButton @open-file="loadNotebook"/>
-      </InputGroup>
+        <div>
+            <Button
+                @click="emit('reset-nb')"
+                v-tooltip.bottom="{value: 'Reset notebook', showDelay: 300}"
+                icon="pi pi-refresh"
+                size="small"
+                severity="info"
+                text
+            />
+            <!--
+            <Button
+                @click="downloadNotebook"
+                v-tooltip.bottom="{value: 'Download as .ipynb', showDelay: 300}"
+                icon="pi pi-download"
+                size="small"
+                severity="info"
+                text
+            />
+            <OpenNotebookButton @open-file="loadNotebook"/>
+            -->
+            <Button
+                @click="toggleFileMenu"
+                v-tooltip.bottom="{value: 'Show file menu', showDelay: 300}"
+                icon="pi pi-folder-open"
+                size="small"
+                severity="info"
+                text
+            />
+        </div>
+        <OverlayPanel ref="isFileMenuOpen"><BeakerFilePane/></OverlayPanel>
   </div>
 </template>
 
 <script setup>
-import { defineEmits, inject } from 'vue';
+import { defineEmits, inject, ref } from 'vue';
 import Button from 'primevue/button';
-import SplitButton from 'primevue/splitbutton';
+import OverlayPanel from 'primevue/overlaypanel';
 import InputGroup from 'primevue/inputgroup';
 import OpenNotebookButton from './OpenNotebookButton.vue';
 import { downloadFileDOM, getDateTime } from '../util';
+import BeakerFilePane from './BeakerFilePane.vue';
 
 const emit = defineEmits([
   "run-cell",
@@ -73,6 +49,11 @@ const emit = defineEmits([
   "add-markdown-cell",
   "reset-nb"
 ]);
+
+const isFileMenuOpen = ref();
+const toggleFileMenu = (event) => {
+    isFileMenuOpen.value.toggle(event);
+}
 
 const menuModel = [
     {
@@ -107,11 +88,11 @@ function downloadNotebook() {
 <style lang="scss">
 
 .notebook-controls {
-    margin: 0;
-    width: 100%;
+    margin-bottom: 3%;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    //align-items: center;
+    //padding-left: 20%;
+    justify-content: center;
 
     .p-inputgroup {
         width: unset;

@@ -15,27 +15,21 @@
                     @change="handleCodeChange"
                     @ready="handleReady"
                 />
-                <CodeCellOutput :outputs="cell.outputs" :busy="isBusy" />
+                <CodeCellOutput :outputs="cell.outputs" :busy="isBusy" :isVisible="true"/>
             </div>
             <div class="state-info">
                 <div class="execution-count-badge">
-                    <Badge
-                        :class="{secondary: badgeSeverity === 'secondary'}"
-                        :severity="badgeSeverity"
-                        :value="cell.execution_count || '&nbsp;'">
-                    </Badge>
+                    <!-- <Badge
+                        v-show="isVisible"
+                        outlined
+                        icon="pi pi-arrow-down-left-and-arrow-up-right-to-center"
+                        size="small"
+                        @click="toggleVisible"
+                    /> -->
                 </div>
                 <i
                     v-if="isBusy"
                     class="pi pi-spin pi-spinner busy-icon"
-                />
-                <Button
-                    v-if="hasRollback"
-                    class="rollback-button"
-                    :severity="badgeSeverity"
-                    icon="pi pi-refresh"
-                    size="small"
-                    @click="rollback"
                 />
             </div>
         </div>
