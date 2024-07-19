@@ -291,6 +291,10 @@ class LLMKernel(KernelProxyManager):
         self, stream, msg_or_type, content=None, channel=None, parent_header={}, parent_identities=None, msg_id=None,
     ):
         # Parse response as needed
+        logger.error(f"Sending response: {parent_header}")
+        logger.error(f"{msg_or_type}")
+        if msg_or_type == "code_cell":
+            logger.error("\n\nCODE CELL\n\n")
         stream = getattr(self.server.streams, stream)
         message = self.server.make_multipart_message(
             msg_type=msg_or_type, content=content, parent_header=parent_header, msg_id=msg_id

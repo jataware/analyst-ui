@@ -3,6 +3,7 @@ import logging
 import re
 import requests
 from time import sleep
+import asyncio
 
 from archytas.tool_utils import AgentRef, LoopControllerRef, tool
 
@@ -34,6 +35,37 @@ class BiomeAgent(BaseAgent):
         libraries = {
         }
         super().__init__(context, tools, **kwargs)
+    
+
+    async def poll_query(self, job_id: str):
+        # Poll result
+        status = "queued"
+        result = None
+        while status == "queued" or status == "started":
+            response = requests.get(f"{BIOME_URL}/jobs/{job_id}").json()
+            status = response["status"]
+            sleep(1)
+
+        # Handle result
+        if status != "finished":
+            return f"Query failed to complete. Job {status}"
+        result = response["result"] # TODO: Bubble up better cell type
+        from datetime import datetime
+        from uuid import uuid4
+        self.context.send_response("iopub", 
+            "code_cell", {
+                "code": result["answer"]
+                #"name": "query_job_response",
+                #"text": result["answer"]
+            },
+            parent_header = {
+                "session": "3afeee28-0b9b-4b9f-ba87-0260321c4a5e",
+                "username": "", 
+                "version": "5.2", 
+                "msg_id": str(uuid4()), 
+                "date": datetime.now().isoformat()
+            }
+        ) 
 
 
     @tool(autosummarize=True)
@@ -87,6 +119,8 @@ class BiomeAgent(BaseAgent):
         Find the url from a data source by using `search` tool first and
         picking the most relevant one.
 
+        This kicks off a long-running job so you'll have to use the ID. 
+
         This can be used to ask questions about a data source or download some kind
         of artifact from it. This tool just kicks off a job where an AI crawls the website
         and performs the task.
@@ -95,26 +129,13 @@ class BiomeAgent(BaseAgent):
             task (str): Task given in natural language to perform over URL.
             base_url (str): URL to run query over.
         Returns:
-            str: The answer to the query running over the given url
+            str: Job ID to poll for the result. 
         """
         # Kick off query
-        response = requests.post( f"{BIOME_URL}/tasks/query", json={"user_task": task, "url": base_url})
+        response = requests.post( f"{BIOME_URL}/jobs/query", json={"user_task": task, "url": base_url})
         job_id = response.json()["job_id"]
-
-        # Poll result
-        status = "queued"
-        result = None
-        while status == "queued" or status == "started":
-            response = requests.get(f"{BIOME_URL}/tasks/{job_id}").json()
-            status = response["status"]
-            sleep(1)
-
-        # Handle result
-        if status != "finished":
-            return f"Query failed to complete. Job {status}"
-        result = response["result"]["job_result"]
-
-        return result["answer"]
+        asyncio.create_task(self.poll_query(job_id))
+        return job_id
 
 
     # @tool(autosummarize=True)

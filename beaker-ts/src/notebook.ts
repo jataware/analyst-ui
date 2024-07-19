@@ -251,7 +251,9 @@ export class BeakerQueryCell extends BeakerBaseCell implements IQueryCell {
 
         const handleIOPub = async (msg: IBeakerIOPubMessage) => {
             const msg_type = msg.header.msg_type;
+            console.log(`\n\n\n${msg_type}\n\n\n`);
             const content = msg.content;
+            console.log(`\n\n\n${content}\n\n\n`);
             if (msg_type === "status") {
                 this.status = content.execution_state;
             }
@@ -269,6 +271,7 @@ export class BeakerQueryCell extends BeakerBaseCell implements IQueryCell {
             }
             else if (msg_type === "code_cell") {
                 const nb = session.notebook;
+                console.log("\n\n\nAdding code cell\n\n\n");
                 const codeCell = new BeakerCodeCell({
                     cell_type: "code",
                     source: content.code,
