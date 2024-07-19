@@ -4,7 +4,7 @@ const path = require('path');
 module.exports = defineConfig({
   // publicPath: "/dev_ui/",
   pages: {
-    index: 'src/pages/dev-interface.ts',
+    index: 'src/pages/analyst.ts',
     admin: 'src/pages/admin.ts',
     notebook: 'src/pages/notebook.ts',
     cell: 'src/pages/cell.ts',
