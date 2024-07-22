@@ -15,22 +15,17 @@
         >
             <div class="beaker-dev-interface">
             <header>
-                <BeakerHeader
-                    :connectionStatus="connectionStatus"
+                <AnalystHeader
                     :toggleDarkMode="toggleDarkMode"
-                    :loading="!activeContext?.slug"
-                    @select-kernel="toggleContextSelection"
                 />
             </header>
-            <main style="display: flex;">
+            <main style="display: flex; overflow: auto;">
                 <SideMenu
                     position="left"
                     :show-label="true"
                     highlight="line"
                 >
-                    <SideMenuPanel label="Context" icon="pi pi-home">
-                        <ContextTree :context="activeContext?.info" @action-selected="selectAction"/>
-                    </SideMenuPanel>
+                    <p>DELETE ME</p>
                 </SideMenu>
 
                     <div class="central-panel"
@@ -41,7 +36,7 @@
                             v-keybindings="notebookKeyBindings"
                         >
                             <BeakerNotebookToolbar/>
-                            <BeakerNotebookPanel
+                            <AnalystPanel
                                 :selected-cell="beakerNotebookRef?.selectedCellId"
                             >
                                 <template #notebook-background>
@@ -49,7 +44,7 @@
                                         <SvgPlaceholder />
                                     </div>
                                 </template>
-                            </BeakerNotebookPanel>
+                            </AnalystPanel>
                             <BeakerAgentQuery
                                 class="agent-query-container"
                             />
@@ -77,14 +72,6 @@
                                 </Card>
                             </SideMenuPanel>
 
-                            <SideMenuPanel tabId="logging" label="Logging" icon="pi pi-list" >
-                                <LoggingPane :entries="debugLogs" />
-                            </SideMenuPanel>
-
-                            <SideMenuPanel label="Messages" icon="pi pi-comments">
-                                <LoggingPane :entries="rawMessages" />
-                            </SideMenuPanel>
-
                             <SideMenuPanel label="Files" icon="pi pi-file-export">
                                 <BeakerFilePane />
                             </SideMenuPanel>
@@ -95,15 +82,6 @@
                 <FooterDrawer />
             </footer>
             </div>
-            <slot name="context-selection-popup">
-                <BeakerContextSelection
-                    :isOpen="contextSelectionOpen"
-                    :toggleOpen="toggleContextSelection"
-                    :contextProcessing="contextProcessing"
-                    @context-changed="(contextData) => {beakerSession.setContext(contextData)}"
-                    @close-context-selection="contextSelectionOpen = false"
-                />
-            </slot>
         </BeakerSession>
 
         <!-- Modals, popups and globals -->
@@ -116,9 +94,9 @@ import { defineProps, ref, onBeforeMount, provide, nextTick, onUnmounted } from 
 import { JupyterMimeRenderer  } from 'beaker-kernel';
 import BeakerNotebook from '@/components/notebook/BeakerNotebook.vue';
 import BeakerNotebookToolbar from '@/components/notebook/BeakerNotebookToolbar.vue';
-import BeakerNotebookPanel from '@/components/notebook/BeakerNotebookPanel.vue';
+import AnalystPanel from '@/components/analyst-ui/AnalystPanel.vue';
 import BeakerSession from '@/components/session/BeakerSession.vue';
-import BeakerHeader from '@/components/dev-interface/BeakerHeader.vue';
+import AnalystHeader from '@/components/analyst-ui/AnalystHeader.vue';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { DecapodeRenderer, JSONRenderer, LatexRenderer, wrapJupyterRenderer } from '../renderers';
@@ -145,7 +123,8 @@ import BeakerRawCell from '@/components/cell/BeakerRawCell.vue';
 
 const toast = useToast();
 
-const activeContext = ref({"context": "biome", "language": "python3"});
+// NOTE: Right now, we don't want the context changing
+const activeContext = {"context": "biome", "language": "python3", "slug": "python3"};
 const beakerNotebookRef = ref();
 
 
@@ -364,7 +343,6 @@ const snapshot = () => {
     localStorage.setItem("notebookData", JSON.stringify(notebookData));
   }
 };
-
 </script>
 
 <style lang="scss">
