@@ -54,7 +54,7 @@
 <script setup lang="tsx">
 import { inject } from "vue";
 import { BeakerSession } from 'beaker-kernel';
-import { IBeakerNotebook } from './BeakerNotebook.vue';
+import { BeakerNotebookComponentType } from './BeakerNotebook.vue';
 
 import Button from "primevue/button";
 import Toolbar from "primevue/toolbar";
@@ -62,8 +62,8 @@ import Toolbar from "primevue/toolbar";
 import OpenNotebookButton from "../dev-interface/OpenNotebookButton.vue";
 import { downloadFileDOM, getDateTime } from '@/util';
 
-const session: BeakerSession = inject('session');
-const notebook: IBeakerNotebook = inject('notebook');
+const session = inject<BeakerSession>('session');
+const notebook = inject<BeakerNotebookComponentType>('notebook');
 
 
 const addCodeCell = () => {
@@ -102,5 +102,6 @@ function downloadNotebook() {
 <style lang="scss">
 .beaker-toolbar {
     padding: 0.25rem 0.5rem;
+    align-self: flex-start;
 }
 </style>
