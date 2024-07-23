@@ -14,28 +14,43 @@
             v-keybindings="sessionKeybindings"
         >
             <div class="beaker-dev-interface">
-            <header>
+            <header style="justify-content: center;">
+                <!--
                 <AnalystHeader
                     :toggleDarkMode="toggleDarkMode"
                 />
+                -->
+
+
+                            <BeakerNotebookToolbar>
+                              <template #start>
+                                <BeakerResetNotebookButton/>
+                                <Button
+                                    @click="toggleFileMenu"
+                                    v-tooltip.bottom="{value: 'Show file menu', showDelay: 300}"
+                                    icon="pi pi-file-export"
+                                    size="small"
+                                    severity="info"
+                                    text
+                                />
+                                <OverlayPanel ref="isFileMenuOpen" style="overflow-y: auto; height:40em;">
+                                    <BeakerFilePane/>
+                                </OverlayPanel>
+                              </template>
+                              <template #end>
+                                <DarkModeButton :toggle-dark-mode="toggleDarkMode"/>
+                              </template>
+                            </BeakerNotebookToolbar>
+
             </header>
             <main style="display: flex; overflow: auto;">
-                <SideMenu
-                    position="left"
-                    :show-label="true"
-                    highlight="line"
-                >
-                    <p>DELETE ME</p>
-                </SideMenu>
-
-                    <div class="central-panel"
-                    >
+                <div style="width:20%"></div>
+                <div class="central-panel">
                         <BeakerNotebook
                             ref="beakerNotebookRef"
                             :cell-map="cellComponentMapping"
                             v-keybindings="notebookKeyBindings"
                         >
-                            <BeakerNotebookToolbar/>
                             <AnalystPanel
                                 :selected-cell="beakerNotebookRef?.selectedCellId"
                             >
@@ -49,34 +64,8 @@
                                 class="agent-query-container"
                             />
                         </BeakerNotebook>
-                    </div>
-                        <SideMenu
-                            position="right"
-                            ref="rightMenu"
-                            highlight="line"
-                            :show-label="true"
-                        >
-                            <SideMenuPanel tabId="preview" label="Preview" icon="pi pi-eye">
-                                <PreviewPane :previewData="previewData"/>
-                            </SideMenuPanel>
-
-                            <SideMenuPanel tabId="action" label="Actions" icon="pi pi-send">
-                                <Card class="debug-card">
-                                    <template #title>Execute an Action</template>
-                                    <template #content>
-                                        <BeakerExecuteAction
-                                            ref="executeActionRef"
-                                            :rawMessages="rawMessages"
-                                        />
-                                    </template>
-                                </Card>
-                            </SideMenuPanel>
-
-                            <SideMenuPanel label="Files" icon="pi pi-file-export">
-                                <BeakerFilePane />
-                            </SideMenuPanel>
-
-                        </SideMenu>
+                </div>
+                <div style="width:20%"></div>
             </main>
             <footer>
                 <FooterDrawer />
@@ -97,23 +86,22 @@ import BeakerNotebookToolbar from '@/components/notebook/BeakerNotebookToolbar.v
 import AnalystPanel from '@/components/analyst-ui/AnalystPanel.vue';
 import BeakerSession from '@/components/session/BeakerSession.vue';
 import AnalystHeader from '@/components/analyst-ui/AnalystHeader.vue';
+import BeakerResetNotebookButton from '@/components/buttons/BeakerResetNotebookButton.vue';
+import DarkModeButton from '@/components/buttons/DarkModeButton.vue';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { DecapodeRenderer, JSONRenderer, LatexRenderer, wrapJupyterRenderer } from '../renderers';
 import { standardRendererFactories } from '@jupyterlab/rendermime';
 
-import Card from 'primevue/card';
-import LoggingPane from '@/components/dev-interface/LoggingPane.vue';
 import BeakerAgentQuery from '@/components/agent/BeakerAgentQuery.vue';
-import BeakerContextSelection from "@/components/session/BeakerContextSelection.vue";
 import BeakerExecuteAction from "@/components/dev-interface/BeakerExecuteAction.vue";
-import ContextTree from '@/components/dev-interface/ContextTree.vue';
 import BeakerFilePane from '@/components/dev-interface/BeakerFilePane.vue';
-import PreviewPane from '@/components/dev-interface/PreviewPane.vue';
 import SvgPlaceholder from '@/components/misc/SvgPlaceholder.vue';
 import SideMenu from "@/components/sidemenu/SideMenu.vue";
 import SideMenuPanel from "@/components/sidemenu/SideMenuPanel.vue";
-import FooterDrawer from '@/components/dev-interface/FooterDrawer.vue';
+import FooterDrawer from '@/components/analyst-ui/FooterDrawer.vue';
+import OverlayPanel from 'primevue/overlaypanel';
+import Button from "primevue/button";
 
 import BeakerCodeCell from '@/components/cell/BeakerCodeCell.vue';
 import BeakerMarkdownCell from '@/components/cell/BeakerMarkdownCell.vue';
@@ -166,6 +154,12 @@ const cellComponentMapping = {
     'markdown': BeakerMarkdownCell,
     'query': BeakerLLMQueryCell,
     'raw': BeakerRawCell,
+}
+
+
+const isFileMenuOpen = ref();
+const toggleFileMenu = (event) => {
+    isFileMenuOpen.value.toggle(event);
 }
 
 const connectionStatus = ref('connecting');

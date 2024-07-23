@@ -7,7 +7,6 @@
         <template #center>
             <div class="logo">
                 <h4>
-                    Analyst UI
                 </h4>
             </div>
         </template>
