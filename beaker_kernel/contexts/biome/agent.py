@@ -37,7 +37,8 @@ class BiomeAgent(BaseAgent):
         super().__init__(context, tools, **kwargs)
     
 
-    async def poll_query(self, job_id: str):
+    # TODO: Formatting of these messages should be left to the Analyst-UI in the future. 
+    async def poll_query(self, job_id: str, format_result):
         # Poll result
         status = "queued"
         result = None
@@ -48,23 +49,16 @@ class BiomeAgent(BaseAgent):
 
         # Handle result
         if status != "finished":
-            return f"Query failed to complete. Job {status}"
+            self.context.send_response("iopub", 
+                "job_response", {
+                    "response": f"# JOB {job_id} FAILED" 
+                },
+            ) 
         result = response["result"] # TODO: Bubble up better cell type
-        from datetime import datetime
-        from uuid import uuid4
         self.context.send_response("iopub", 
-            "code_cell", {
-                "code": result["answer"]
-                #"name": "query_job_response",
-                #"text": result["answer"]
+            "job_response", {
+                "response": format_result(result)
             },
-            parent_header = {
-                "session": "3afeee28-0b9b-4b9f-ba87-0260321c4a5e",
-                "username": "", 
-                "version": "5.2", 
-                "msg_id": str(uuid4()), 
-                "date": datetime.now().isoformat()
-            }
         ) 
 
 
@@ -110,8 +104,7 @@ class BiomeAgent(BaseAgent):
     # Option 3: We can maybe leverage new widgets in the Analyst UI??
     #
 
-    # CHOOSING OPTION 2 FOR THE TIME BEING
-
+    # CHOOSING OPTION 1 FOR THE TIME BEING
     @tool()
     async def query_page(self, task: str, base_url: str) -> str:
         """
@@ -119,7 +112,8 @@ class BiomeAgent(BaseAgent):
         Find the url from a data source by using `search` tool first and
         picking the most relevant one.
 
-        This kicks off a long-running job so you'll have to use the ID. 
+        This kicks off a long-running job so you'll have to just return the ID to the user
+        instead of the result. 
 
         This can be used to ask questions about a data source or download some kind
         of artifact from it. This tool just kicks off a job where an AI crawls the website
@@ -131,26 +125,38 @@ class BiomeAgent(BaseAgent):
         Returns:
             str: Job ID to poll for the result. 
         """
-        # Kick off query
         response = requests.post( f"{BIOME_URL}/jobs/query", json={"user_task": task, "url": base_url})
         job_id = response.json()["job_id"]
-        asyncio.create_task(self.poll_query(job_id))
+        def format_result(result):
+            return (
+                "## Query Response\n"
+                f"{result['answer']}\n\n"
+                f"#### ID: {job_id}"
+            )
+        asyncio.create_task(self.poll_query(job_id, format_result))
         return job_id
 
 
-    # @tool(autosummarize=True)
-    # async def scan(self, base_url: str, agent:AgentRef, loop: LoopControllerRef) -> dict:
-    #     """
-    #     Profiles the given web page and adds it to the data sources in the Biome app.
-    #     Note that this starts the scan job but does not wait for it to finish.
+    @tool()
+    async def scan(self, base_url: str, agent:AgentRef, loop: LoopControllerRef) -> str:
+        """
+        Profiles the given web page and adds it to the data sources in the Biome app.
 
-    #     Args:
-    #         base_url (str): The url to scan and add to a data source.
-    #     Returns:
-    #         dict: The information about the scan job
-    #     """
+        This kicks off a long-running job so you'll have to just return the ID to the user
+        instead of the result. 
 
-    #     url = f"{BIOME_URL}/tasks/scan"
-    #     result = requests.post(url, json={"uris": [base_url]})
-    #     return result.json()
-
+        Args:
+            base_url (str): The url to scan and add as a data source.
+        Returns:
+            str: Job ID to poll for the result. 
+        """
+        response = requests.post( f"{BIOME_URL}/jobs/scan", json={"uris": [base_url]})
+        job_id = response.json()["job_id"]
+        def format_result(_result):
+            return (
+                "## Scan Response\n"
+                f"SUCCESS\n\n"
+                f"#### ID: {job_id}"
+            )
+        asyncio.create_task(self.poll_query(job_id, format_result))
+        return job_id

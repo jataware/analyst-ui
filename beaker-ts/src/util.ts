@@ -92,29 +92,6 @@ export namespace BeakerCellFutures {
         if (msg_type === "status") {
             cell.status = content.execution_state;
         }
-        else if (msg_type === "code_cell") {
-            console.log("MADE IT")
-            /*
-            const nb = session.notebook;
-            console.log("\n\n\nAdding code cell\n\n\n");
-            const codeCell = new BeakerCodeCell({
-                cell_type: "code",
-                source: content.code,
-                metadata: {
-                    parent_cell: this.id,
-                },
-                outputs: [],
-            });
-
-            const queryCellIndex = nb.cells.findIndex((cell) => (cell.id === this.id));
-            if (queryCellIndex >= 0) {
-                session.notebook.cells.splice(queryCellIndex + 1, 0, codeCell);
-            }
-            else {
-                nb.addCell(codeCell);
-            }
-            */
-        }
         else if (msg_type === "execute_result") {
             cell.busy = false;
             if (content.execution_count) {

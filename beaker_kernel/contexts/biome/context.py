@@ -17,7 +17,3 @@ class BiomeContext(BaseContext):
         super().__init__(beaker_kernel, self.agent_cls, config)
         if not isinstance(self.subkernel, PythonSubkernel):
             raise ValueError("This context is only valid for Python.")
-
-    async def setup(self, context_info=None, parent_header=None):
-        await self.execute(self.get_code("setup", {}))
-        return await super().setup(context_info, parent_header)
