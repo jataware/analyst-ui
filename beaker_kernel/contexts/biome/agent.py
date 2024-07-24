@@ -112,7 +112,8 @@ class BiomeAgent(BaseAgent):
         Find the url from a data source by using `search` tool first and
         picking the most relevant one.
 
-        This kicks off a long-running job so you'll have to use the ID to check on the job later. 
+        This kicks off a long-running job so you'll have to just return the ID to the user
+        instead of the result. 
 
         This can be used to ask questions about a data source or download some kind
         of artifact from it. This tool just kicks off a job where an AI crawls the website
@@ -141,7 +142,8 @@ class BiomeAgent(BaseAgent):
         """
         Profiles the given web page and adds it to the data sources in the Biome app.
 
-        This kicks off a long-running job so you'll have to use the ID to check on the job later. 
+        This kicks off a long-running job so you'll have to just return the ID to the user
+        instead of the result. 
 
         Args:
             base_url (str): The url to scan and add as a data source.
