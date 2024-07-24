@@ -11,37 +11,30 @@
             @unhandled-msg="unhandledMessage"
             @any-msg="anyMessage"
             @session-status-changed="statusChanged"
+            @context-changed="setContext"
             v-keybindings="sessionKeybindings"
         >
             <div class="beaker-dev-interface">
             <header style="justify-content: center;">
-                <!--
-                <AnalystHeader
-                    :toggleDarkMode="toggleDarkMode"
-                />
-                -->
-
-
-                            <BeakerNotebookToolbar>
-                              <template #start>
-                                <BeakerResetNotebookButton/>
-                                <Button
-                                    @click="toggleFileMenu"
-                                    v-tooltip.bottom="{value: 'Show file menu', showDelay: 300}"
-                                    icon="pi pi-file-export"
-                                    size="small"
-                                    severity="info"
-                                    text
-                                />
-                                <OverlayPanel ref="isFileMenuOpen" style="overflow-y: auto; height:40em;">
-                                    <BeakerFilePane/>
-                                </OverlayPanel>
-                              </template>
-                              <template #end>
-                                <DarkModeButton :toggle-dark-mode="toggleDarkMode"/>
-                              </template>
-                            </BeakerNotebookToolbar>
-
+                <BeakerNotebookToolbar>
+                    <template #start>
+                    <BeakerResetNotebookButton :on-reset-callback="() => setContext({})"/>
+                    <Button
+                        @click="toggleFileMenu"
+                        v-tooltip.bottom="{value: 'Show file menu', showDelay: 300}"
+                        icon="pi pi-file-export"
+                        size="small"
+                        severity="info"
+                        text
+                    />
+                    <OverlayPanel ref="isFileMenuOpen" style="overflow-y: auto; height:40em;">
+                        <BeakerFilePane/>
+                    </OverlayPanel>
+                    </template>
+                    <template #end>
+                        <DarkModeButton :toggle-dark-mode="toggleDarkMode"/>
+                    </template>
+                </BeakerNotebookToolbar>
             </header>
             <main style="display: flex; overflow: auto;">
                 <div style="width:20%"></div>
@@ -85,7 +78,6 @@ import BeakerNotebook from '@/components/notebook/BeakerNotebook.vue';
 import BeakerNotebookToolbar from '@/components/notebook/BeakerNotebookToolbar.vue';
 import AnalystPanel from '@/components/analyst-ui/AnalystPanel.vue';
 import BeakerSession from '@/components/session/BeakerSession.vue';
-import AnalystHeader from '@/components/analyst-ui/AnalystHeader.vue';
 import BeakerResetNotebookButton from '@/components/buttons/BeakerResetNotebookButton.vue';
 import DarkModeButton from '@/components/buttons/DarkModeButton.vue';
 import Toast from 'primevue/toast';
@@ -94,11 +86,8 @@ import { DecapodeRenderer, JSONRenderer, LatexRenderer, wrapJupyterRenderer } fr
 import { standardRendererFactories } from '@jupyterlab/rendermime';
 
 import BeakerAgentQuery from '@/components/agent/BeakerAgentQuery.vue';
-import BeakerExecuteAction from "@/components/dev-interface/BeakerExecuteAction.vue";
 import BeakerFilePane from '@/components/dev-interface/BeakerFilePane.vue';
 import SvgPlaceholder from '@/components/misc/SvgPlaceholder.vue';
-import SideMenu from "@/components/sidemenu/SideMenu.vue";
-import SideMenuPanel from "@/components/sidemenu/SideMenuPanel.vue";
 import FooterDrawer from '@/components/analyst-ui/FooterDrawer.vue';
 import OverlayPanel from 'primevue/overlaypanel';
 import Button from "primevue/button";
@@ -114,7 +103,11 @@ const toast = useToast();
 // NOTE: Right now, we don't want the context changing
 const activeContext = {"context": "biome", "language": "python3", "slug": "python3"};
 const beakerNotebookRef = ref();
-
+const setContext = (contextInfo) => {
+    if (contextInfo?.slug !== 'biome') {
+        beakerSession.value.setContext(activeContext);
+    }
+}
 
 // TODO -- WARNING: showToast is only defined locally, but provided/used everywhere. Move to session?
 // Let's only use severity=success|warning|danger(=error) for now
@@ -167,13 +160,8 @@ const debugLogs = ref<object[]>([]);
 const rawMessages = ref<object[]>([])
 const previewData = ref<any>();
 const saveInterval = ref();
-const notebookRef = ref<typeof BeakerNotebook>();
 const beakerSession = ref<typeof BeakerSession>();
 
-const contextSelectionOpen = ref(false);
-const contextProcessing = ref(false);
-const rightMenu = ref<typeof SideMenuPanel>();
-const executeActionRef = ref<typeof BeakerExecuteAction>();
 const selectedTheme = ref(localStorage.getItem('theme') || 'light');
 
 const applyTheme = () => {
@@ -197,7 +185,10 @@ const iopubMessage = (msg) => {
       body: msg.content.body,
       timestamp: msg.header.date,
     });
+  } else if (msg.header.msg_type === "job_response") {
+    beakerSession.value.session.addMarkdownCell(msg.content.response);
   }
+
 };
 
 const anyMessage = (msg, direction) => {
@@ -216,14 +207,6 @@ const statusChanged = (newStatus) => {
   connectionStatus.value = newStatus == 'idle' ? 'connected' : newStatus;
 };
 
-const toggleContextSelection = () => {
-  contextSelectionOpen.value = !contextSelectionOpen.value;
-};
-
-const selectAction = (actionName: string) => {
-    rightMenu.value?.selectPanel("action");
-    executeActionRef.value?.selectAction(actionName);
-};
 
 onBeforeMount(() => {
   document.title = "Analyst UI"
@@ -260,7 +243,6 @@ onUnmounted(() => {
 // TODO: See above. Move somewhere better.
 provide('show_toast', showToast);
 
-const keyBindingState = {};
 const notebookKeyBindings = {
     "keydown.enter.ctrl.prevent.capture.in-cell": () => {
         beakerNotebookRef.value.selectedCell().execute();
