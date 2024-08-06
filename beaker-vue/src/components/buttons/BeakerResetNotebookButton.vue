@@ -1,7 +1,7 @@
 <template>
 <Button
     @click="resetNotebook"
-    v-tooltip.bottom="{value: 'Reset notebook', showDelay: 300}"
+    v-tooltip.right="{value: 'Reset notebook', showDelay: 300}"
     icon="pi pi-refresh"
     size="small"
     severity="info"

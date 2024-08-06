@@ -16,28 +16,28 @@
         >
             <div class="beaker-dev-interface">
             <header style="justify-content: center;">
-                <BeakerNotebookToolbar>
+                <VerticalToolbar style="align-self: flex-start;">
                     <template #start>
-                    <BeakerResetNotebookButton :on-reset-callback="() => setContext({})"/>
-                    <Button
-                        @click="toggleFileMenu"
-                        v-tooltip.bottom="{value: 'Show file menu', showDelay: 300}"
-                        icon="pi pi-file-export"
-                        size="small"
-                        severity="info"
-                        text
-                    />
-                    <OverlayPanel ref="isFileMenuOpen" style="overflow-y: auto; height:40em;">
-                        <BeakerFilePane/>
-                    </OverlayPanel>
-                    </template>
-                    <template #end>
+                        <BeakerResetNotebookButton :on-reset-callback="() => setContext({})"/>
+                        <Button
+                            @click="toggleFileMenu"
+                            v-tooltip.right="{value: 'Show file menu', showDelay: 300}"
+                            icon="pi pi-file-export"
+                            size="small"
+                            severity="info"
+                            text
+                        />
+                        <OverlayPanel ref="isFileMenuOpen" style="overflow-y: auto; height:40em;">
+                            <BeakerFilePane/>
+                        </OverlayPanel>
                         <DarkModeButton :toggle-dark-mode="toggleDarkMode"/>
                     </template>
-                </BeakerNotebookToolbar>
+                    <template #end>
+
+                    </template>
+                </VerticalToolbar>
             </header>
             <main style="display: flex; overflow: auto;">
-                <div style="width:20%"></div>
                 <div class="central-panel">
                         <BeakerNotebook
                             ref="beakerNotebookRef"
@@ -49,19 +49,17 @@
                             >
                                 <template #notebook-background>
                                     <div class="welcome-placeholder">
-                                        <SvgPlaceholder />
                                     </div>
                                 </template>
                             </AnalystPanel>
-                            <BeakerAgentQuery
+                            <AnalystAgentQuery
                                 class="agent-query-container"
                             />
                         </BeakerNotebook>
                 </div>
-                <div style="width:20%"></div>
             </main>
             <footer>
-                <FooterDrawer />
+                <FooterDrawer></FooterDrawer>
             </footer>
             </div>
         </BeakerSession>
@@ -72,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, ref, onBeforeMount, provide, nextTick, onUnmounted } from 'vue';
+import { defineProps, ref, onBeforeMount, provide, nextTick, onUnmounted, inject } from 'vue';
 import { JupyterMimeRenderer  } from 'beaker-kernel';
 import BeakerNotebook from '@/components/notebook/BeakerNotebook.vue';
 import BeakerNotebookToolbar from '@/components/notebook/BeakerNotebookToolbar.vue';
@@ -85,7 +83,7 @@ import { useToast } from 'primevue/usetoast';
 import { DecapodeRenderer, JSONRenderer, LatexRenderer, wrapJupyterRenderer } from '../renderers';
 import { standardRendererFactories } from '@jupyterlab/rendermime';
 
-import BeakerAgentQuery from '@/components/agent/BeakerAgentQuery.vue';
+import AnalystAgentQuery from '@/components/analyst-ui/AnalystAgentQuery.vue';
 import BeakerFilePane from '@/components/dev-interface/BeakerFilePane.vue';
 import SvgPlaceholder from '@/components/misc/SvgPlaceholder.vue';
 import FooterDrawer from '@/components/analyst-ui/FooterDrawer.vue';
@@ -96,7 +94,9 @@ import BeakerCodeCell from '@/components/cell/BeakerCodeCell.vue';
 import BeakerMarkdownCell from '@/components/cell/BeakerMarkdownCell.vue';
 import BeakerLLMQueryCell from '@/components/cell/BeakerLLMQueryCell.vue';
 import BeakerRawCell from '@/components/cell/BeakerRawCell.vue';
+import VerticalToolbar from '@/components/analyst-ui/VerticalToolbar.vue';
 
+const { theme, toggleDarkMode } = inject('theme');
 
 const toast = useToast();
 
@@ -162,20 +162,6 @@ const previewData = ref<any>();
 const saveInterval = ref();
 const beakerSession = ref<typeof BeakerSession>();
 
-const selectedTheme = ref(localStorage.getItem('theme') || 'light');
-
-const applyTheme = () => {
-    const themeLink = document.querySelector('#primevue-theme');
-    themeLink.href = `/themes/soho-${selectedTheme.value}/theme.css`;
-}
-
-const toggleDarkMode = () => {
-    selectedTheme.value = selectedTheme.value === 'light' ? 'dark' : 'light'
-    localStorage.setItem('theme', selectedTheme.value);
-    applyTheme();
-};
-
-
 const iopubMessage = (msg) => {
   if (msg.header.msg_type === "preview") {
     previewData.value = msg.content;
@@ -231,7 +217,6 @@ onBeforeMount(() => {
   }
   saveInterval.value = setInterval(snapshot, 30000);
   window.addEventListener("beforeunload", snapshot);
-  applyTheme();
 });
 
 onUnmounted(() => {
@@ -330,7 +315,7 @@ const snapshot = () => {
 }
 
 header {
-    grid-area: header;
+    grid-area: l-sidebar;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -341,7 +326,7 @@ main {
 }
 
 footer {
-    grid-area: footer;
+    grid-area: r-sidebar;
 }
 
 .main-panel {
@@ -352,11 +337,16 @@ footer {
     }
 }
 
+div.beaker-notebook {
+    padding-top: 1rem;
+}
 
 .central-panel {
     flex: 1000;
     display: flex;
     flex-direction: column;
+    max-width: 800px;
+    margin: auto;
 }
 
 .beaker-dev-interface {
@@ -367,12 +357,50 @@ footer {
     grid-gap: 1px;
 
     grid-template-areas:
-        "header header header header"
-        "main main main main"
-        "footer footer footer footer";
+        "l-sidebar main r-sidebar"
+        "l-sidebar main r-sidebar"
+        "l-sidebar main r-sidebar";
 
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: auto 1fr auto;
     grid-template-rows: auto 1fr auto;
 }
 
+div.cell-container {
+    position: relative;
+    display: flex;
+    flex: 1;
+    background-color: var(--surface-b);
+    flex-direction: column;
+    z-index: 3;
+    overflow: auto;
+}
+
+div.llm-prompt-container h2.llm-prompt-text {
+    font-size: 1.25rem;
+    max-width: 70%;
+    margin-left: auto;
+    background-color: var(--surface-a);
+    padding: 1rem;
+    border-radius: 16px;
+}
+div.llm-prompt-container {
+    text-align: right;
+}
+h3.query-steps {
+    display: none;
+}
+div.events div.query-answer {
+    background-color: var(--surface-b);
+}
+
+div.beaker-toolbar {
+    flex-direction: column;
+}
+div.beaker-toolbar div {
+    flex-direction: column;
+}
+
+div.central-panel, div.beaker-notebook {
+    height: 100%;
+}
 </style>
