@@ -16,12 +16,12 @@
         >
             <div class="beaker-dev-interface">
             <header style="justify-content: center;">
-                <BeakerNotebookToolbar>
+                <VerticalToolbar style="align-self: flex-start;">
                     <template #start>
                         <BeakerResetNotebookButton :on-reset-callback="() => setContext({})"/>
                         <Button
                             @click="toggleFileMenu"
-                            v-tooltip.bottom="{value: 'Show file menu', showDelay: 300}"
+                            v-tooltip.right="{value: 'Show file menu', showDelay: 300}"
                             icon="pi pi-file-export"
                             size="small"
                             severity="info"
@@ -30,11 +30,12 @@
                         <OverlayPanel ref="isFileMenuOpen" style="overflow-y: auto; height:40em;">
                             <BeakerFilePane/>
                         </OverlayPanel>
-                    </template>
-                    <template #end>
                         <DarkModeButton :toggle-dark-mode="toggleDarkMode"/>
                     </template>
-                </BeakerNotebookToolbar>
+                    <template #end>
+
+                    </template>
+                </VerticalToolbar>
             </header>
             <main style="display: flex; overflow: auto;">
                 <div class="central-panel">
@@ -51,14 +52,14 @@
                                     </div>
                                 </template>
                             </AnalystPanel>
-                            <BeakerAgentQuery
+                            <AnalystAgentQuery
                                 class="agent-query-container"
                             />
                         </BeakerNotebook>
                 </div>
             </main>
             <footer>
-                <FooterDrawer />
+                <FooterDrawer></FooterDrawer>
             </footer>
             </div>
         </BeakerSession>
@@ -82,7 +83,7 @@ import { useToast } from 'primevue/usetoast';
 import { DecapodeRenderer, JSONRenderer, LatexRenderer, wrapJupyterRenderer } from '../renderers';
 import { standardRendererFactories } from '@jupyterlab/rendermime';
 
-import BeakerAgentQuery from '@/components/agent/BeakerAgentQuery.vue';
+import AnalystAgentQuery from '@/components/analyst-ui/AnalystAgentQuery.vue';
 import BeakerFilePane from '@/components/dev-interface/BeakerFilePane.vue';
 import SvgPlaceholder from '@/components/misc/SvgPlaceholder.vue';
 import FooterDrawer from '@/components/analyst-ui/FooterDrawer.vue';
@@ -93,6 +94,7 @@ import BeakerCodeCell from '@/components/cell/BeakerCodeCell.vue';
 import BeakerMarkdownCell from '@/components/cell/BeakerMarkdownCell.vue';
 import BeakerLLMQueryCell from '@/components/cell/BeakerLLMQueryCell.vue';
 import BeakerRawCell from '@/components/cell/BeakerRawCell.vue';
+import VerticalToolbar from '@/components/analyst-ui/VerticalToolbar.vue';
 
 const { theme, toggleDarkMode } = inject('theme');
 
@@ -313,7 +315,7 @@ const snapshot = () => {
 }
 
 header {
-    grid-area: header;
+    grid-area: l-sidebar;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -324,7 +326,7 @@ main {
 }
 
 footer {
-    grid-area: footer;
+    grid-area: r-sidebar;
 }
 
 .main-panel {
@@ -335,6 +337,9 @@ footer {
     }
 }
 
+div.beaker-notebook {
+    padding-top: 1rem;
+}
 
 .central-panel {
     flex: 1000;
@@ -352,11 +357,11 @@ footer {
     grid-gap: 1px;
 
     grid-template-areas:
-        "header header header header"
-        "main main main main"
-        "footer footer footer footer";
+        "l-sidebar main r-sidebar"
+        "l-sidebar main r-sidebar"
+        "l-sidebar main r-sidebar";
 
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: auto 1fr auto;
     grid-template-rows: auto 1fr auto;
 }
 
@@ -388,4 +393,14 @@ div.events div.query-answer {
     background-color: var(--surface-b);
 }
 
+div.beaker-toolbar {
+    flex-direction: column;
+}
+div.beaker-toolbar div {
+    flex-direction: column;
+}
+
+div.central-panel, div.beaker-notebook {
+    height: 100%;
+}
 </style>
