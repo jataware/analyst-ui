@@ -49,18 +49,18 @@ class BiomeAgent(BaseAgent):
             sleep(1)
 
         # Handle result
-        if status != "finished":
-            self.context.send_response("iopub", 
-                "job_response", {
-                    "response": f"# JOB {job_id} FAILED" 
-                },
-            ) 
-        result = response["result"] # TODO: Bubble up better cell type
-        self.context.send_response("iopub", 
-            "job_response", {
-                "response": format_result(result)
-            },
-        ) 
+        # if status != "finished":
+        #     self.context.send_response("iopub", 
+        #         "job_response", {
+        #             "response": f"# JOB {job_id} {status} FAILED" 
+        #         },
+        #     ) 
+        # result = response["result"] # TODO: Bubble up better cell type
+        # self.context.send_response("iopub", 
+        #     "job_response", {
+        #         "response": format_result(result)
+        #     },
+        # ) 
 
 
     @tool(autosummarize=True)
