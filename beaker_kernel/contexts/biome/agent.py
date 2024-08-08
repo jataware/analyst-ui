@@ -6,6 +6,7 @@ from time import sleep
 import asyncio
 
 from archytas.tool_utils import AgentRef, LoopControllerRef, tool
+from typing import Any
 
 from beaker_kernel.lib.agent import BaseAgent
 from beaker_kernel.lib.context import BaseContext
@@ -63,16 +64,25 @@ class BiomeAgent(BaseAgent):
 
 
     @tool(autosummarize=True)
-    async def search(self, query: str) -> list:
+    async def search(self, query: str) -> list[dict[str, Any]]:
         """
         Search for data sources in the Biome app. Results will be matched semantically
         and string distance. Use this to find a data source. You don't need live
         web searches.
 
+        Be sure to use the `display_search` tool for the output.
+
         Args:
             query (str): The query used to find the datasource.
         Returns:
-            list: The data sources found ordered from most relevant to least relevant.
+            list: A JSON-formatted string containing a list of strings.
+                  The list should contain only the `name` field and no other field
+                  of the data sources found, ordered from most relevant to least relevant.
+                  Ensure that only the name field is present.
+                  An example is provided surrounded in backticks.
+                  ```
+                  ["Proteomics Data Commons", ""Office of Cancer Clinical Proteomics Research", "UniProt"]
+                  ```
         """
 
         endpoint = f"{BIOME_URL}/sources"
@@ -86,10 +96,49 @@ class BiomeAgent(BaseAgent):
                 "initials": source["content"]["Web Page Descriptions"]["initials"],
                 "purpose": source["content"]["Web Page Descriptions"]["purpose"],
                 "links": source["content"]["Information on Links on Web Page"],
-                "base_url": source.get("base_url", None),
+                "base_url": source.get("base_url", None)
             } for source in raw_sources
         ]
-        return str(sources)
+        return sources
+
+    @tool(autosummarize=True)
+    async def display_search(self, results: list[str]):
+        """
+        Once search has been performed, this tool will display it to the user.
+        Args:
+            results (list[str]): The query used to find the datasource.
+        """
+        # sometimes it wraps the output
+        if isinstance(results, dict):
+            results = results.get("results", results)
+        endpoint = f"{BIOME_URL}/sources"
+        response = requests.get(endpoint, params={
+            "simple_query_string": {
+                "fields": ["content.Web Page Descriptions.name"],
+                "query": "|".join(results)
+            }
+        })
+        raw_sources = response.json()['sources']
+        sources = [
+            {
+                "id": source["id"],
+                "name": source["content"]["Web Page Descriptions"]["name"],
+                "initials": source["content"]["Web Page Descriptions"]["initials"],
+                "purpose": source["content"]["Web Page Descriptions"]["purpose"],
+                "links": source["content"]["Information on Links on Web Page"],
+                "base_url": source.get("base_url", None),
+                "logo": source.get("logo", None)
+            } for source in raw_sources
+        ]
+        # match sources to ordering from previous llm step by dict to avoid n^2
+
+        sources_map = { source.get("name", ""): source for source in sources }
+        ordered_sources = [sources_map[name] for name in results]
+        self.context.send_response("iopub",
+            "data_sources", {
+                "sources": ordered_sources
+            },
+        )
 
     # TODO(DESIGN): Deal with long running jobs in tools
     #

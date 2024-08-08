@@ -95,6 +95,9 @@ import BeakerMarkdownCell from '@/components/cell/BeakerMarkdownCell.vue';
 import BeakerLLMQueryCell from '@/components/cell/BeakerLLMQueryCell.vue';
 import BeakerRawCell from '@/components/cell/BeakerRawCell.vue';
 import VerticalToolbar from '@/components/analyst-ui/VerticalToolbar.vue';
+import AnalystDataSourceCell from '@/components/analyst-ui/AnalystDataSourceCell.vue';
+import { BeakerNotebookComponentType } from '@/components/notebook/BeakerNotebook.vue';
+
 
 const { theme, toggleDarkMode } = inject('theme');
 
@@ -103,6 +106,7 @@ const toast = useToast();
 // NOTE: Right now, we don't want the context changing
 const activeContext = {"context": "biome", "language": "python3", "slug": "python3"};
 const beakerNotebookRef = ref();
+const notebook = inject<BeakerNotebookComponentType>("notebook");
 const setContext = (contextInfo) => {
     if (contextInfo?.slug !== 'biome') {
         beakerSession.value.setContext(activeContext);
@@ -147,6 +151,7 @@ const cellComponentMapping = {
     'markdown': BeakerMarkdownCell,
     'query': BeakerLLMQueryCell,
     'raw': BeakerRawCell,
+    'data_sources': AnalystDataSourceCell,
 }
 
 
@@ -173,7 +178,14 @@ const iopubMessage = (msg) => {
     });
   } else if (msg.header.msg_type === "job_response") {
     beakerSession.value.session.addMarkdownCell(msg.content.response);
+  } else if (msg.header.msg_type === "data_sources") {
+    const metadata = {
+        "sources": msg.content.sources
+    }
+    const newCell = beakerSession.value.session.addRawCell("", metadata);
+    newCell.cell_type = "data_sources"
   }
+
 
 };
 
