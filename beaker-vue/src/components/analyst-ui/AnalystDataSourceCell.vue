@@ -18,7 +18,7 @@
                     <a class="datasource-link" :href="source.base_url">{{ source.base_url }}</a>
                 </template>
                 <template #content>
-                    <p class="m-0" style="height: 100%; overflow: scroll; margin: 0;">
+                    <p class="m-0" style="box-sizing: border-box;; overflow-y: auto; margin: 0;">
                         {{ source.purpose }}
                     </p>
                 </template>
@@ -120,6 +120,8 @@ export default {
     width: 16rem;
     height: 28rem;
     margin: 5px;
+    display: flex;
+    flex-direction: column;
 }
 
 .datasource-logo {
@@ -140,15 +142,16 @@ export default {
 .datasource .p-card-body {
     display: flex;
     flex-direction: column;
-    height: calc(100% - 3rem);
+    flex: 1 1 auto;
+    overflow: auto;
 
     .p-card-title {
         font-size: 1.25rem;
     }
     .p-card-content {
         padding-top: 0rem;
-        overflow-y: scroll;
-        height: 100%;
+        flex: 1 1 auto;
+        overflow: auto;
     }
 }
 

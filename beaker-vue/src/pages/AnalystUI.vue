@@ -371,7 +371,7 @@ div.beaker-notebook {
     flex: 1000;
     display: flex;
     flex-direction: column;
-    max-width: 800px;
+    max-width: 820px;
     margin: auto;
 }
 
