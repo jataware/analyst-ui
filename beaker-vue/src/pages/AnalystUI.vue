@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+<div id="app">
         <BeakerSession
             ref="beakerSession"
             :connectionSettings="props.config"
@@ -46,6 +46,7 @@
                         >
                             <AnalystPanel
                                 :selected-cell="beakerNotebookRef?.selectedCellId"
+                                ref="analystPanel"
                             >
                                 <template #notebook-background>
                                     <div class="welcome-placeholder">
@@ -66,7 +67,7 @@
 
         <!-- Modals, popups and globals -->
         <Toast position="bottom-right" />
-  </div>
+</div>
 </template>
 
 <script setup lang="ts">
@@ -106,6 +107,7 @@ const toast = useToast();
 // NOTE: Right now, we don't want the context changing
 const activeContext = {"context": "biome", "language": "python3", "slug": "python3"};
 const beakerNotebookRef = ref();
+const analystPanel = ref();
 const notebook = inject<BeakerNotebookComponentType>("notebook");
 const setContext = (contextInfo) => {
     if (contextInfo?.slug !== 'biome') {
@@ -130,20 +132,20 @@ const urlParams = new URLSearchParams(window.location.search);
 const sessionId = urlParams.has("session") ? urlParams.get("session") : "dev_session";
 
 const props = defineProps([
-  "config",
-  "connectionSettings",
-  "sessionName",
-  "sessionId",
-  "defaultKernel",
-  "renderers",
+    "config",
+    "connectionSettings",
+    "sessionName",
+    "sessionId",
+    "defaultKernel",
+    "renderers",
 ]);
 
 
 const renderers = [
-  ...standardRendererFactories.map((factory) => new JupyterMimeRenderer(factory)).map(wrapJupyterRenderer),
-  JSONRenderer,
-  LatexRenderer,
-  DecapodeRenderer,
+    ...standardRendererFactories.map((factory) => new JupyterMimeRenderer(factory)).map(wrapJupyterRenderer),
+    JSONRenderer,
+    LatexRenderer,
+    DecapodeRenderer,
 ];
 
 const cellComponentMapping = {
@@ -167,68 +169,80 @@ const previewData = ref<any>();
 const saveInterval = ref();
 const beakerSession = ref<typeof BeakerSession>();
 
-const iopubMessage = (msg) => {
-  if (msg.header.msg_type === "preview") {
-    previewData.value = msg.content;
-  } else if (msg.header.msg_type === "debug_event") {
-    debugLogs.value.push({
-      type: msg.content.event,
-      body: msg.content.body,
-      timestamp: msg.header.date,
-    });
-  } else if (msg.header.msg_type === "job_response") {
-    beakerSession.value.session.addMarkdownCell(msg.content.response);
-  } else if (msg.header.msg_type === "data_sources") {
-    const metadata = {
-        "sources": msg.content.sources
+const shouldScroll = (msg) => {
+    if (msg.parent_header.msg_type === "llm_request") {
+        return true;
     }
-    const newCell = beakerSession.value.session.addRawCell("", metadata);
-    newCell.cell_type = "data_sources"
-  }
+    if (msg.header.msg_type === "data_sources") {
+        return true;
+    }
+    return false;
+}
 
-
+const iopubMessage = (msg) => {
+    if (shouldScroll(msg)) {
+        console.log("scrolling");
+        analystPanel.value.scrollBottomCellContainer();
+    }
+    if (msg.header.msg_type === "preview") {
+        previewData.value = msg.content;
+    } else if (msg.header.msg_type === "debug_event") {
+        debugLogs.value.push({
+        type: msg.content.event,
+        body: msg.content.body,
+        timestamp: msg.header.date,
+        });
+    } else if (msg.header.msg_type === "job_response") {
+        beakerSession.value.session.addMarkdownCell(msg.content.response);
+    } else if (msg.header.msg_type === "data_sources") {
+        const metadata = {
+            "sources": msg.content.sources
+        }
+        const newCell = beakerSession.value.session.addRawCell("", metadata);
+        newCell.cell_type = "data_sources"
+    }
 };
 
 const anyMessage = (msg, direction) => {
-  rawMessages.value.push({
-    type: direction,
-    body: msg,
-    timestamp: msg.header.date,
-  });
+    rawMessages.value.push({
+        type: direction,
+        body: msg,
+        timestamp: msg.header.date,
+    });
 };
 
 const unhandledMessage = (msg) => {
-  console.log("Unhandled message recieved", msg);
+console.log("Unhandled message recieved", msg);
 }
 
 const statusChanged = (newStatus) => {
-  connectionStatus.value = newStatus == 'idle' ? 'connected' : newStatus;
+connectionStatus.value = newStatus == 'idle' ? 'connected' : newStatus;
 };
 
 
 onBeforeMount(() => {
-  document.title = "Analyst UI"
-  var notebookData: {[key: string]: any};
-  try {
-    notebookData = JSON.parse(localStorage.getItem("notebookData")) || {};
-  }
-  catch (e) {
-    console.error(e);
-    notebookData = {};
-  }
+    document.title = "Analyst UI"
+    var notebookData: {[key: string]: any};
+    try {
+        notebookData = JSON.parse(localStorage.getItem("notebookData")) || {};
+    }
+    catch (e) {
+        console.error(e);
+        notebookData = {};
+    }
 
-  if (notebookData[sessionId]?.data) {
-    nextTick(() => {
-        if (beakerNotebookRef.value?.notebook) {
-            beakerNotebookRef.value?.notebook.loadFromIPynb(notebookData[sessionId].data);
-            nextTick(() => {
-                beakerNotebookRef.value?.selectCell(notebookData[sessionId].selectedCell);
-            });
-        }
-    });
-  }
-  saveInterval.value = setInterval(snapshot, 30000);
-  window.addEventListener("beforeunload", snapshot);
+    if (notebookData[sessionId]?.data) {
+        nextTick(() => {
+            if (beakerNotebookRef.value?.notebook) {
+                beakerNotebookRef.value?.notebook.loadFromIPynb(notebookData[sessionId].data);
+                nextTick(() => {
+                    beakerNotebookRef.value?.selectCell(notebookData[sessionId].selectedCell);
+                });
+            }
+        });
+    }
+    saveInterval.value = setInterval(snapshot, 30000);
+    window.addEventListener("beforeunload", snapshot);
 });
 
 onUnmounted(() => {
@@ -299,31 +313,31 @@ const sessionKeybindings = {
 }
 
 const snapshot = () => {
-  var notebookData: {[key: string]: any};
-  try {
-    notebookData = JSON.parse(localStorage.getItem("notebookData")) || {};
-  }
-  catch (e) {
-    console.error(e);
-    notebookData = {};
-  }
-  // Only save state if there is state to save
-  if (beakerNotebookRef.value?.notebook) {
-    notebookData[sessionId] = {
-        data: beakerNotebookRef.value?.notebook.toIPynb(),
-        selectedCell: beakerNotebookRef.value?.selectedCellId,
-    };
-    localStorage.setItem("notebookData", JSON.stringify(notebookData));
-  }
+    var notebookData: {[key: string]: any};
+    try {
+        notebookData = JSON.parse(localStorage.getItem("notebookData")) || {};
+    }
+    catch (e) {
+        console.error(e);
+        notebookData = {};
+    }
+    // Only save state if there is state to save
+    if (beakerNotebookRef.value?.notebook) {
+        notebookData[sessionId] = {
+            data: beakerNotebookRef.value?.notebook.toIPynb(),
+            selectedCell: beakerNotebookRef.value?.selectedCellId,
+        };
+        localStorage.setItem("notebookData", JSON.stringify(notebookData));
+    }
 };
 </script>
 
 <style lang="scss">
 #app {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background-color: var(--surface-b);
+margin: 0;
+padding: 0;
+overflow: hidden;
+background-color: var(--surface-b);
 }
 
 header {

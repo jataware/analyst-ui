@@ -1,27 +1,40 @@
 <template>
-    <div class="datasource-cell">
-        <Card 
-            v-for="source in cell.metadata.sources" 
-            :key="source.name" 
-            class="datasource"
+    <div class="datasource-container">
+        <div class="datasource-cell">
+            <Card 
+                v-for="source in cards" 
+                :key="source.name" 
+                class="datasource"
+            >
+                <template #header>
+                    <img 
+                        class="datasource-logo" 
+                        alt="logo" 
+                        :src="`data:image/png;base64,${source.logo}`" 
+                    />
+                </template>
+                <template #title>{{ source.name }}</template>
+                <template #subtitle>
+                    <a class="datasource-link" :href="source.base_url">{{ source.base_url }}</a>
+                </template>
+                <template #content>
+                    <p class="m-0" style="height: 100%; overflow: scroll; margin: 0;">
+                        {{ source.purpose }}
+                    </p>
+                </template>
+            </Card>
+        </div>
+        <div
+            class="datasource-show-more-container"
+            v-if="cell?.metadata?.sources?.length > numCardsShownByDefault"
         >
-            <template #header>
-                <img 
-                    class="datasource-logo" 
-                    alt="logo" 
-                    :src="`data:image/png;base64,${source.logo}`" 
-                />
-            </template>
-            <template #title>{{ source.name }}</template>
-            <template #subtitle>
-                <a class="datasource-link" :href="source.base_url">{{ source.base_url }}</a>
-            </template>
-            <template #content>
-                <p class="m-0">
-                    {{ source.purpose }}
-                </p>
-            </template>
-        </Card>
+            <Button 
+                :label="`Show ${showMore ? 'Less' : 'More'}`"
+                @click="showMore = !showMore"
+                v-if="cell?.metadata?.sources?.length > numCardsShownByDefault"
+                class="datasource-show-more"
+            />
+        </div>
     </div>
 </template>
 
@@ -38,6 +51,8 @@ const props = defineProps([
 const instance = getCurrentInstance();
 const beakerSession = inject<BeakerSessionComponentType>("beakerSession");
 const cell = ref(props.cell);
+const showMore = ref(false);
+const screenWidth = ref(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0))
 
 // no-ops, read only cell
 const no_op = () => {
@@ -54,8 +69,27 @@ defineExpose({
     clear,
 });
 
+const getViewportWidth = () => Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+
+const numCardsShownByDefault = computed(() => {
+    // 940px is the breakpoint for when cards go to rows of 3 instead of 2
+    // todo: programatically fetch this?
+    return screenWidth.value > 940 ? 3 : 2;
+});
+
+const cards = computed(() => {
+    let sources = props.cell?.metadata?.sources;
+    if (sources !== undefined) {
+        return showMore.value ? sources : sources.slice(0, numCardsShownByDefault.value)
+    }
+    return undefined;
+})
+
 onBeforeMount(() => {
     beakerSession.cellRegistry[cell.value.id] = instance.vnode;
+    window.addEventListener("resize", () => {
+        screenWidth.value = getViewportWidth();
+    })
 })
 
 onBeforeUnmount(() => {
@@ -73,6 +107,10 @@ export default {
 
 <style lang="scss" >
 
+.datasource-container {
+    margin-bottom: 2rem;
+}
+
 .datasource-cell {
     display: flex;
     flex-wrap: wrap;
@@ -82,14 +120,13 @@ export default {
     width: 16rem;
     height: 28rem;
     margin: 5px;
-    overflow-y: scroll;
-    overflow-x: hidden;
 }
 
 .datasource-logo {
     width: 100%;
     height: 60px;
-    border-radius: 1rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    object-fit: contain
 }
 
 .datasource-link[href] {
@@ -103,6 +140,8 @@ export default {
 .datasource .p-card-body {
     display: flex;
     flex-direction: column;
+    height: calc(100% - 3rem);
+
     .p-card-title {
         font-size: 1.25rem;
     }
@@ -111,6 +150,15 @@ export default {
         overflow-y: scroll;
         height: 100%;
     }
+}
+
+.datasource-show-more-container {
+    display: flex;
+    flex-direction: row;
+    margin-top: 0.5rem;
+}
+.datasource-show-more {
+    margin: auto;
 }
 
 </style>

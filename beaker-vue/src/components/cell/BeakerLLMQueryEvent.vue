@@ -1,6 +1,6 @@
 <template>
     <div class="llm-query-event">
-        <span v-if="isMarkdownRef" v-html="markdownBody" />
+        <span v-if="isMarkdown(event) && isValidResponse(event)" v-html="markdownBody" />
         <span v-if="props.event?.type === 'response' && parentQueryCell?.children?.length !== 0">
             <h4 class="agent-outputs">Outputs:</h4>
             <Accordion :multiple="true" :active-index="lastOutput">
@@ -102,6 +102,13 @@ const getCellModelById = (id): IBeakerCell | undefined => {
 const isMarkdown = (event: BeakerQueryEvent) => {
     const markdownTypes: BeakerQueryEventType[] = ["thought", "response", "user_answer", "user_question"];
     return markdownTypes.includes(event.type);
+}
+
+const isValidResponse = (event: BeakerQueryEvent) => {
+    if (event.type === "response" && event.content === "None") {
+        return false;
+    }
+    return true;
 }
 
 const isMarkdownRef = computed(() => isMarkdown(props.event))

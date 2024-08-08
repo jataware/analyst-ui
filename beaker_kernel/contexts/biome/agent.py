@@ -68,9 +68,9 @@ class BiomeAgent(BaseAgent):
         """
         Search for data sources in the Biome app. Results will be matched semantically
         and string distance. Use this to find a data source. You don't need live
-        web searches.
+        web searches. If the user asks about data sources, use this tool.
 
-        Be sure to use the `display_search` tool for the output.
+        Be sure to use the `display_search` tool for the output. Ensure you always use `display_search` after.
 
         Args:
             query (str): The query used to find the datasource.
@@ -102,7 +102,7 @@ class BiomeAgent(BaseAgent):
         return sources
 
     @tool(autosummarize=True)
-    async def display_search(self, results: list[str]):
+    async def display_search(self, results: list[str], agent:AgentRef, loop: LoopControllerRef):
         """
         Once search has been performed, this tool will display it to the user.
         Args:
@@ -139,6 +139,7 @@ class BiomeAgent(BaseAgent):
                 "sources": ordered_sources
             },
         )
+        loop.set_state(loop.STOP_SUCCESS)
 
     # TODO(DESIGN): Deal with long running jobs in tools
     #

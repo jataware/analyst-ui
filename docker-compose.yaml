@@ -30,6 +30,7 @@ services:
     #working_dir: "/results"
   ui:
     image: node:20
+    user: "node"
     volumes:
       - ./beaker-vue:/ui
       - ./beaker-ts:/beaker-ts

@@ -38,9 +38,7 @@ const emit = defineEmits([]);
 
 
 function scrollBottomCellContainer(event) {
-    console.log("HIT");
     if (cellsContainerRef.value) {
-        console.log("SHOULD SCROLL");
         cellsContainerRef.value.scrollTop = cellsContainerRef.value.scrollHeight;
     }
 }
