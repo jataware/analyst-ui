@@ -114,7 +114,7 @@ export default {
 .markdown-cell {
     padding-right: 2rem;
     padding-left: 1rem;
-    min-height: 80%;
+    margin-bottom: 1.25rem;
 }
 
 .markdown-edit-cell-grid {
